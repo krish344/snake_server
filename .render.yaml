@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: snake-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
