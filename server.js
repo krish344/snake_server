@@ -1,19 +1,25 @@
 const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
+const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: { origin: "*" },
+const io = new Server(server, {
+  cors: { origin: "*" }
 });
 
-let players = {};
+const players = {};
 
 io.on("connection", (socket) => {
-  players[socket.id] = { id: socket.id, x: 50, y: 50, score: 0 };
-  socket.broadcast.emit("new-player", players[socket.id]);
-  socket.emit("all-players", players);
+  console.log("New player:", socket.id);
+
+  const takenColors = Object.values(players).map(p => p.color);
+  socket.emit("choose-color", takenColors);
+
+  socket.on("color-chosen", (color) => {
+    players[socket.id] = { x: 50, y: 50, score: 0, color };
+    io.emit("all-players", players);
+  });
 
   socket.on("move", (data) => {
     if (players[socket.id]) {
@@ -24,12 +30,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    console.log("Player left:", socket.id);
     delete players[socket.id];
     io.emit("player-left", socket.id);
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(3000, () => {
+  console.log("Server running on port 3000");
 });
